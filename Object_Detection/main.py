@@ -1,6 +1,8 @@
-import cv2
-import numpy as np
+# package imports (go to file > settings > project > python interpreter > + in top right > add the following:
+import cv2  # opencv_python
+import numpy as np  # numpy
 
+# file imports
 import Objectives.ContourAndColorDetection as ContourAndColor
 
 ##########################
@@ -66,8 +68,9 @@ while True:
         pastObjectEdgePoint = objectEdgePoint   # update previous point
 
     # Select Custom Color to Detect
-    imgHsv = cv2.cvtColor(imgCropped, cv2.COLOR_BGR2HSV)
+    imgHsv = cv2.cvtColor(imgCropped, cv2.COLOR_BGR2HSV)    #convert BGR to HSV
 
+    # record track bar position (user input)
     h_min = cv2.getTrackbarPos("HUE Min", "HSV")
     h_max = cv2.getTrackbarPos("HUE Max", "HSV")
     s_min = cv2.getTrackbarPos("SAT Min", "HSV")
@@ -75,17 +78,21 @@ while True:
     v_min = cv2.getTrackbarPos("VALUE Min", "HSV")
     v_max = cv2.getTrackbarPos("VALUE Max", "HSV")
 
+    # create mask
     lower = np.array([h_min, s_min, v_min])
     upper = np.array([h_max, s_max, v_max])
     mask = cv2.inRange(imgHsv, lower, upper)
     result = cv2.bitwise_and(imgCropped, imgCropped, mask=mask)
-
     mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
 
+    # stack the different types of images together
     imgHsvStack = ContourAndColor.stackImages(0.8, ([imgCropped, imgHsv], [mask, result]))
     imgEdgeStack = ContourAndColor.stackImages(0.8, ([imgCropped, imgCanny], [imgDil, imgContour]))
-    cv2.imshow("Contour Result", imgEdgeStack)
-    # cv2.imshow("HSV Result", imgHsvStack)
 
+    # display image
+    cv2.imshow("Contour Result", imgEdgeStack)
+    # cv2.imshow("HSV Result", imgHsvStack) # commented out for now to reduce traffic when running
+
+    # press 'q' to exit from run
     if cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
         break

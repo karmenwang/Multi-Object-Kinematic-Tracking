@@ -64,12 +64,10 @@ def getContours(img, imgContour):
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 2)
             perimeter = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
-            # print(len(approx))
             x, y, w, h = cv2.boundingRect(approx)  # Find bounding box
-            objectEdge = (x + w, y + (h // 2))
+            objectEdge = (x + w, y + (h // 2))  # (right most point, center)
 
             cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(imgContour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                         (36, 255, 12), 2)
-            # print(objectEdge[0])
             return objectEdge
