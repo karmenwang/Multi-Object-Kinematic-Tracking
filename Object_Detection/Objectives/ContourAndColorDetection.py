@@ -54,7 +54,6 @@ def stackImages(scale, imgArray):
         ver = hor
     return ver
 
-
 def getContours(img, imgContour):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # Use edge detection map img
     for cnt in contours:

@@ -1,9 +1,12 @@
 # package imports (go to file > settings > project > python interpreter > + in top right > add the following:
 import cv2  # opencv_python
 import numpy as np  # numpy
+import time
 
 # file imports
 import Objectives.ContourAndColorDetection as ContourAndColor
+import Objectives.SpeedDetection as Speed
+import Objectives.MovingAverage as MovingAverage
 
 ##########################
 # Video Settings
@@ -21,6 +24,17 @@ scale_percent = 60  # 30
 ##########################
 line_coord = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 pastObjectEdgePoint = [0, 0]
+sampleSize = 10  # array size
+
+# time, x, y array for sample points
+timeSampleArray = [time.time()] * sampleSize
+xPosSampleArray = [0] * sampleSize
+yPosSampleArray = [0] * sampleSize
+
+# create objects of Moving Average class
+xMovingAverage = MovingAverage.MovingAverage(sampleSize, xPosSampleArray)
+yMovingAverage = MovingAverage.MovingAverage(sampleSize, yPosSampleArray)
+tMovingAverage = MovingAverage.MovingAverage(sampleSize, timeSampleArray)
 
 while True:
     if webcam:
@@ -33,7 +47,6 @@ while True:
     height = int(img.shape[0] * scale_percent / 100)
     dimensions = (width, height)
     imgResized = cv2.resize(img, dimensions, interpolation=cv2.INTER_AREA)
-    # imgCropped = imgResized[y:y + h, x:x + w]
     imgCropped = imgResized
 
     # Contour Prep
@@ -41,34 +54,57 @@ while True:
     imgBlur = cv2.GaussianBlur(imgCropped, (7, 7), 1)  # Apply slight blur
     imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)  # Apply grayscale
     threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
-    threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold boundq
+    threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
     imgCanny = cv2.Canny(imgGray, threshold1, threshold2)  # Apply edge detection (Canny)
     kernel = np.ones((5, 5))
     imgDil = cv2.dilate(imgCanny, kernel, iterations=1)  # Process for filtering out background noise
+
     objectEdgePoint = ContourAndColor.getContours(imgDil, imgContour)  # Call on function to find Contour
 
     # Line Threshold
     cv2.line(imgContour, (line_coord[0][0], line_coord[0][1]), (line_coord[1][0], line_coord[1][1]), (0, 0, 255), 2)
 
+    try:
+        xCounter = xMovingAverage.updateArray(objectEdgePoint[0])   # update xPosSampleArray with x coordinate
+        yCounter = yMovingAverage.updateArray(objectEdgePoint[1])
+        tCounter = tMovingAverage.updateArray(time.time())
+    except TypeError:
+        xCounter = 0
+        yCounter = 0
+
+    xPosSampleArray = xMovingAverage.getArray()
+    yPosSampleArray = yMovingAverage.getArray()
+
     # compare object to threshold line
     try:
         if objectEdgePoint[0] >= line_coord[0][0]:  # if object has crossed threshold along x
             cv2.circle(imgContour, objectEdgePoint, 5, (0, 255, 0), cv2.FILLED)
-            print("passed")
+            # print("passed")
 
         else:
             cv2.circle(imgContour, objectEdgePoint, 5, (0, 0, 255), cv2.FILLED)
-            print("not passed")
+            # print("not passed")
+        # print(xPosSampleArray)
+        # print(yPosSampleArray)
+        xVector = Speed.CalculateSpeed(xPosSampleArray[0], xPosSampleArray[xCounter - 1], timeSampleArray[0],
+                                       timeSampleArray[tCounter - 1])
+        yVector = Speed.CalculateSpeed(yPosSampleArray[0], yPosSampleArray[yCounter - 1], timeSampleArray[0],
+                                       timeSampleArray[tCounter - 1])
 
+        xVelocity = xVector.getVelocityVector()
+        yVelocity = yVector.getVelocityVector()
+
+        # print(xPosSampleArray)
+        # print(yPosSampleArray)
     except TypeError:
-        objectEdgePoint = pastObjectEdgePoint   # if TypeError occurs previous point
+        objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point
         print("Type Error")
 
     else:
-        pastObjectEdgePoint = objectEdgePoint   # update previous point
+        pastObjectEdgePoint = objectEdgePoint  # update previous point
 
     # Select Custom Color to Detect
-    imgHsv = cv2.cvtColor(imgCropped, cv2.COLOR_BGR2HSV)    #convert BGR to HSV
+    imgHsv = cv2.cvtColor(imgCropped, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
 
     # record track bar position (user input)
     h_min = cv2.getTrackbarPos("HUE Min", "HSV")
