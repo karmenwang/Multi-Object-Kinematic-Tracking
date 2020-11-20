@@ -3,83 +3,71 @@ import cv2  # opencv_python
 import time
 
 # file imports
-import Objectives.ContourAndColorDetection as ContourAndColor
-import Objectives.SpeedDetection as Speed
-import Objectives.MovingAverage as MovingAverage
-import Objectives.Utilities as Utilities
+import Classes.SpeedDetection as Speed
+import Classes.MovingAverage as MovingAverage
+import Classes.VideoSetUp as VideoSetUp
 
-##########################
-# Video Settings
-webcam = True  # Toggle between image or webcam
-cap = cv2.VideoCapture(0)  # use default camera
-# cap.set(10, 160)  # brightness
-# cap.set(3, 1920)  # width
-# cap.set(4, 1080)  # height
-
-# Image Settings
-path = '../Resources/9.png'
-scale_percent = 60  # 30
-
-##########################
-line_coord = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
+# Constants #####################
+LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 pastObjectEdgePoint = [0, 0]
-sampleSize = 10  # array size
+SAMPLE_SIZE = 10
 
-# time, x, y array for sample points
-timeSampleArray = [time.time()] * sampleSize
-xPosSampleArray = [0] * sampleSize
-yPosSampleArray = [0] * sampleSize
+timeSampleArray = [time.time()] * SAMPLE_SIZE
+xPosSampleArray = [0] * SAMPLE_SIZE
+yPosSampleArray = [0] * SAMPLE_SIZE
 
-# create objects of Moving Average class
-xMovingAverage = MovingAverage.MovingAverage(sampleSize, xPosSampleArray)
-yMovingAverage = MovingAverage.MovingAverage(sampleSize, yPosSampleArray)
-tMovingAverage = MovingAverage.MovingAverage(sampleSize, timeSampleArray)
+# Create new object #############
+image = VideoSetUp.IMGProcess()
 
-# create object for display window utilities
-image = Utilities.Utilities(webcam, path, cap)
+trackBar = VideoSetUp.TrackBar()
+
+xMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, xPosSampleArray)
+yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
+tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
+
+# Set object parameters #########
+image.path = '../Resources/9.png'
+image.percentage = 60
 
 while True:
     # Initializing img with an option to resize
-    img = image.InitializeImg(scale_percent)
+    img = image.capture_image()
     imgContour = img.copy()
-    imgDilation = ContourAndColor.getDilation(img)
-    objectEdgePoint = ContourAndColor.getContours(imgDilation, imgContour)  # Call on function to find Contour
+    image.get_dilation_img(img)
+    objectEdgePoint = image.object_edge(imgContour)
 
     # Line Threshold
-    cv2.line(imgContour, (line_coord[0][0], line_coord[0][1]), (line_coord[1][0], line_coord[1][1]), (0, 0, 255), 2)
+    cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
     try:
-        xCounter = xMovingAverage.updateArray(objectEdgePoint[0])   # update xPosSampleArray with x coordinate
-        yCounter = yMovingAverage.updateArray(objectEdgePoint[1])
-        tCounter = tMovingAverage.updateArray(time.time())
+        xCounter = xMovingAverage.update_array(objectEdgePoint[0])  # update xPosSampleArray with x coordinate
+        yCounter = yMovingAverage.update_array(objectEdgePoint[1])
+        tCounter = tMovingAverage.update_array(time.time())
 
     except TypeError:
         xCounter = 0
         yCounter = 0
 
-    xPosSampleArray = xMovingAverage.getArray()
-    yPosSampleArray = yMovingAverage.getArray()
+    xPosSampleArray = xMovingAverage.get_array()
+    yPosSampleArray = yMovingAverage.get_array()
 
-    # compare object to threshold line
+    # Compare object to threshold line
     try:
-        if objectEdgePoint[0] >= line_coord[0][0]:  # if object has crossed threshold along x
-            cv2.circle(imgContour, objectEdgePoint, 5, (0, 255, 0), cv2.FILLED)
-            # print("passed")
+        if objectEdgePoint[0] >= LINE_COORD[0][0]:  # if object has crossed threshold along x
+            cv2.circle(imgContour, objectEdgePoint, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
 
         else:
-            cv2.circle(imgContour, objectEdgePoint, 5, (0, 0, 255), cv2.FILLED)
-            # print("not passed")
+            cv2.circle(imgContour, objectEdgePoint, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn green
 
         xVector = Speed.CalculateSpeed(xPosSampleArray[0], xPosSampleArray[xCounter - 1], timeSampleArray[0],
                                        timeSampleArray[tCounter - 1])
         yVector = Speed.CalculateSpeed(yPosSampleArray[0], yPosSampleArray[yCounter - 1], timeSampleArray[0],
                                        timeSampleArray[tCounter - 1])
 
-        xVelocity = xVector.getVelocityVector()
-        yVelocity = yVector.getVelocityVector()
+        xVelocity = xVector.get_velocity_vector()
+        yVelocity = yVector.get_velocity_vector()
 
-        # print(xPosSampleArray)
-        # print(yPosSampleArray)
+        print("X Velocity {:.2f}".format(xVelocity), "Y Velocity {:.2f}".format(yVelocity))
     except TypeError:
         objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point
         print("Type Error")
@@ -87,15 +75,11 @@ while True:
     else:
         pastObjectEdgePoint = objectEdgePoint  # update previous point
 
-    # Select Custom Color to Detect
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
-
-    HSVMinMaxArray = ContourAndColor.readTrackBars()
-
-    imgHSVResult = ContourAndColor.getHSV(img, imgHSV, HSVMinMaxArray)
+    # HSV color detection
+    image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
     # stack the different types of images together
-    imgStack = Utilities.stackImages(0.8, ([img, imgContour], [imgHSV, imgHSVResult]))
+    imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
 
     # display image
     cv2.imshow("Result", imgStack)
