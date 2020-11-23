@@ -2,6 +2,7 @@ import collections
 import numpy as np
 from scipy.ndimage.filters import uniform_filter1d
 
+
 class MovingAverage:
 
     def __init__(self, sampleNumber=None, sampleArray=[0]):
@@ -37,5 +38,6 @@ class MovingAverage:
         return self.sampleArray
 
     def newAveFunction(self, x):
-        y = uniform_filter1d(x, self.indexCounter, mode='constant', origin=-(self.indexCounter//2))[:-(self.indexCounter-1)]
+        y = uniform_filter1d(x, self.indexCounter, mode='constant', origin=-(self.indexCounter // 2))[
+            :-(self.indexCounter - 1)]
         return y

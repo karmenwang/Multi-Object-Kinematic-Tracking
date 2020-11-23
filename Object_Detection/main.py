@@ -33,7 +33,6 @@ image.webcam = True
 while True:
     # Initializing img with an option to resize
     img = image.capture_image()
-    cv2.imshow("Image",img)
 
     imgContour = img.copy()
     image.get_dilation_img(img)
