@@ -10,23 +10,30 @@ import Classes.VideoSetUp as VideoSetUp
 # Constants #####################
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 pastObjectEdgePoint = [0, 0]
-SAMPLE_SIZE = 100
+SAMPLE_SIZE = 10
 
 timeSampleArray = [time.time()] * SAMPLE_SIZE
 xPosSampleArray = [0] * SAMPLE_SIZE
 yPosSampleArray = [0] * SAMPLE_SIZE
+
+xVelocityArray = [0] * SAMPLE_SIZE
+yVelocityArray = [0] * SAMPLE_SIZE
 
 # Create new object #############
 image = VideoSetUp.IMGProcess()
 
 trackBar = VideoSetUp.TrackBar()
 
+timeVariable = time.time()
+timeLast = time.time()
+
 xMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, xPosSampleArray)
 yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
 tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 
 # Set object parameters #########
-image.path = '/Resources/9.png'
+image.webcam = True
+image.path = 'Resources/6.png'
 image.percentage = 60
 image.webcam = True
 
@@ -37,21 +44,21 @@ while True:
     imgContour = img.copy()
     image.get_dilation_img(img)
     objectEdgePoint = image.object_edge(imgContour)
+    image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
     # Line Threshold
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
-
     try:
-        xCounter = xMovingAverage.update_array(objectEdgePoint[0])  # update xPosSampleArray with x coordinate
-        yCounter = yMovingAverage.update_array(objectEdgePoint[1])
-        tCounter = tMovingAverage.update_array(time.time())
+        # print(xMovingAverage.avg_function(objectEdgePoint[0]))
+        xMovingAverage.ring_buffer(objectEdgePoint[0])
+        yMovingAverage.ring_buffer(objectEdgePoint[1])
+        tMovingAverage.ring_buffer(time.time())
 
     except TypeError:
-        xCounter = 0
-        yCounter = 0
+        print("No object detected")
 
-    xPosSampleArray = xMovingAverage.get_array()
-    yPosSampleArray = yMovingAverage.get_array()
+    xPosSampleArray = xMovingAverage.ring
+    yPosSampleArray = yMovingAverage.ring
 
     # Compare object to threshold line
     try:
@@ -61,15 +68,15 @@ while True:
         else:
             cv2.circle(imgContour, objectEdgePoint, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn green
 
-        xVector = Speed.CalculateSpeed(xPosSampleArray[0], xPosSampleArray[xCounter - 1], timeSampleArray[0],
-                                       timeSampleArray[tCounter - 1])
-        yVector = Speed.CalculateSpeed(yPosSampleArray[0], yPosSampleArray[yCounter - 1], timeSampleArray[0],
-                                       timeSampleArray[tCounter - 1])
+        xVector = Speed.CalculateSpeed(xPosSampleArray[xMovingAverage.sampleNumber - 2],
+                                       xPosSampleArray[xMovingAverage.sampleNumber - 1],
+                                       timeSampleArray[tMovingAverage.sampleNumber - 2],
+                                       timeSampleArray[tMovingAverage.sampleNumber - 1])
+        yVector = Speed.CalculateSpeed(yPosSampleArray[xMovingAverage.sampleNumber - 2],
+                                       yPosSampleArray[yMovingAverage.sampleNumber - 1],
+                                       timeSampleArray[tMovingAverage.sampleNumber - 2],
+                                       timeSampleArray[tMovingAverage.sampleNumber - 1])
 
-        xVelocity = xVector.get_velocity_vector()
-        yVelocity = yVector.get_velocity_vector()
-        print(xMovingAverage.newAveFunction(xPosSampleArray))
-        print("X Velocity {:.2f}".format(xVelocity), "Y Velocity {:.2f}".format(yVelocity))
     except TypeError:
         objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point
         print("Type Error")
@@ -77,15 +84,24 @@ while True:
     else:
         pastObjectEdgePoint = objectEdgePoint  # update previous point
 
-    # HSV color detection
-    image.get_hsv_img(img, trackBar.HSVMinMaxArray)
-
-    # stack the different types of images together
     imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
-
-    # display image
     cv2.imshow("Result", imgStack)
 
-    # press 'q' to exit from run
-    if cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
+    xVelocityArray.append(xVector.get_velocity_vector())
+    yVelocityArray.append(yVector.get_velocity_vector())
+    timeVariable = time.time()
+    
+    if timeVariable - timeLast >= 1:
+        xMovingAverage.avg_function(xVelocityArray, len(xVelocityArray))
+        yMovingAverage.avg_function(yVelocityArray, len(yVelocityArray))
+        print(xMovingAverage.averageArray)
+        print(yMovingAverage.averageArray)
+        xVelocityArray.clear()
+        yVelocityArray.clear()
+        timeLast = time.time()
+
+    if not image.webcam:
+        cv2.waitKey(0)
+
+    elif cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
         break
