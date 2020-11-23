@@ -5,7 +5,7 @@ import math
 
 temp = None
 
-cap = cv2.VideoCapture('Resources/cars_passing_input.mp4')
+cap = cv2.VideoCapture('cars_passing_input.mp4')
 wheel_count = []
 tire = 0  ## flag to check if second tire has been found in the frame
 car = 1  ## counter for which car number we are at
@@ -65,7 +65,7 @@ while (cap.isOpened()):
 
         def ssd(img1):
             try:
-                tire1 = cv2.imread("../Resources/wheel977.png", 0)
+                tire1 = cv2.imread("wheel977.png", 0)
                 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
                 dstt = cv2.morphologyEx(tire1, cv2.MORPH_CLOSE, kernel)
                 dstt1 = cv2.morphologyEx(img1, cv2.MORPH_CLOSE, kernel)

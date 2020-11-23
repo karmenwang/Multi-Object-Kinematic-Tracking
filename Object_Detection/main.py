@@ -10,7 +10,7 @@ import Classes.VideoSetUp as VideoSetUp
 # Constants #####################
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 pastObjectEdgePoint = [0, 0]
-SAMPLE_SIZE = 10
+SAMPLE_SIZE = 100
 
 timeSampleArray = [time.time()] * SAMPLE_SIZE
 xPosSampleArray = [0] * SAMPLE_SIZE
@@ -26,12 +26,15 @@ yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
 tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 
 # Set object parameters #########
-image.path = '../Resources/9.png'
+image.path = '/Resources/9.png'
 image.percentage = 60
+image.webcam = True
 
 while True:
     # Initializing img with an option to resize
     img = image.capture_image()
+    cv2.imshow("Image",img)
+
     imgContour = img.copy()
     image.get_dilation_img(img)
     objectEdgePoint = image.object_edge(imgContour)
@@ -66,7 +69,7 @@ while True:
 
         xVelocity = xVector.get_velocity_vector()
         yVelocity = yVector.get_velocity_vector()
-
+        print(xMovingAverage.newAveFunction(xPosSampleArray))
         print("X Velocity {:.2f}".format(xVelocity), "Y Velocity {:.2f}".format(yVelocity))
     except TypeError:
         objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point

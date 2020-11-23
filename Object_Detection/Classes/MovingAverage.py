@@ -1,13 +1,14 @@
 import collections
-
+import numpy as np
+from scipy.ndimage.filters import uniform_filter1d
 
 class MovingAverage:
 
     def __init__(self, sampleNumber=None, sampleArray=[0]):
         self.sampleNumber = sampleNumber
-        self.indexNumber = 0
+        self.indexNumber = 1
         self.sampleArray = sampleArray
-        self.indexCounter = 0  # checks to see if our array has been filled up
+        self.indexCounter = 1  # checks to see if our array has been filled up
 
     # update array with new points, replacing array[sampleNumber-1] with the new data point and shifting prev data left
     def update_array(self, sampleData):
@@ -34,3 +35,7 @@ class MovingAverage:
 
     def get_array(self):
         return self.sampleArray
+
+    def newAveFunction(self, x):
+        y = uniform_filter1d(x, self.indexCounter, mode='constant', origin=-(self.indexCounter//2))[:-(self.indexCounter-1)]
+        return y

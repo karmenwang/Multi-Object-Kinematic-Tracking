@@ -74,10 +74,10 @@ class TrackBar:
 
 
 class IMGProcess:
-    def __init__(self, webcam=True, path=None, cap=cv2.VideoCapture(0), percentage=100):
+    def __init__(self, webcam=True, path=None, percentage=100):
         self.webcam = webcam
         self.path = path
-        self.cap = cap
+        self.cap = cv2.VideoCapture(0)
         self.percentage = percentage
 
         self.cap.set(10, 160)  # brightness
@@ -107,7 +107,7 @@ class IMGProcess:
         threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
         threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
         imgCanny = cv2.Canny(imgGray, threshold1, threshold2)  # Apply edge detection (Canny)
-        kernel = np.ones((5, 5))
+        kernel = np.ones((5, 5)) #return a 5x5 matrix filled with ones
         self.imgDilation = cv2.dilate(imgCanny, kernel, iterations=1)  # Process for filtering out background noise
 
     def object_edge(self, imgContour):

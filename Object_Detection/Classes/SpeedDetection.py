@@ -10,7 +10,7 @@ class CalculateSpeed:
         positionVector = self.currentPoint - self.lastPoint  # position vector = final - initial
         timePassed = (self.currentPointTime - self.lastPointTime)
         if timePassed == 0:
-            timePassed = 1  # assume 1 millisecond has passed if no time has passed
+            timePassed = 0.001  # assume 1 millisecond has passed if no time has passed
         velocityVector = positionVector / timePassed    # (pos final - pos initial)/(T final-T initial)
 
         return velocityVector
