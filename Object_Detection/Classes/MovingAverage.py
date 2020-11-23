@@ -39,3 +39,7 @@ class MovingAverage:
     def newAveFunction(self, x):
         y = uniform_filter1d(x, self.indexCounter, mode='constant', origin=-(self.indexCounter//2))[:-(self.indexCounter-1)]
         return y
+    
+    def convolutionAveFunction(self,x):
+        y = np.convolve(x, np.ones(self.indexCounter)/float(self.indexCounter),'valid')
+        return y

@@ -45,8 +45,8 @@ def empty():
 class TrackBar:
     def __init__(self):
         # create track bars
-        cv2.namedWindow("Parameters")  # Window name
-        cv2.resizeWindow("HSV", 640, 240)
+        cv2.namedWindow("Parameters")
+        cv2.resizeWindow("Parameters", 640, 240)
         cv2.createTrackbar("Threshold1", "Parameters", 23, 255, empty)
         cv2.createTrackbar("Threshold2", "Parameters", 20, 255, empty)
         cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
