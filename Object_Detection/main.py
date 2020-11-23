@@ -26,7 +26,8 @@ yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
 tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 
 # Set object parameters #########
-image.path = '../Resources/9.png'
+image.webcam = True
+image.path = 'Resources/6.png'
 image.percentage = 60
 
 while True:
@@ -35,7 +36,9 @@ while True:
     imgContour = img.copy()
     image.get_dilation_img(img)
     objectEdgePoint = image.object_edge(imgContour)
+    image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
+    # if image.webcam:
     # Line Threshold
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
@@ -75,15 +78,11 @@ while True:
     else:
         pastObjectEdgePoint = objectEdgePoint  # update previous point
 
-    # HSV color detection
-    image.get_hsv_img(img, trackBar.HSVMinMaxArray)
-
-    # stack the different types of images together
     imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
-
-    # display image
     cv2.imshow("Result", imgStack)
 
-    # press 'q' to exit from run
-    if cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
+    if not image.webcam:
+        cv2.waitKey(0)
+
+    elif cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
         break

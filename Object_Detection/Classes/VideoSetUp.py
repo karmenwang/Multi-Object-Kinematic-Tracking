@@ -45,8 +45,8 @@ def empty():
 class TrackBar:
     def __init__(self):
         # create track bars
-        cv2.namedWindow("Parameters")  # Window name
-        cv2.resizeWindow("HSV", 640, 240)
+        cv2.namedWindow("Parameters")
+        cv2.resizeWindow("Parameters", 640, 240)
         cv2.createTrackbar("Threshold1", "Parameters", 23, 255, empty)
         cv2.createTrackbar("Threshold2", "Parameters", 20, 255, empty)
         cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
@@ -74,10 +74,10 @@ class TrackBar:
 
 
 class IMGProcess:
-    def __init__(self, webcam=True, path=None, cap=cv2.VideoCapture(0), percentage=100):
+    def __init__(self, webcam=True, path=None, percentage=100):
         self.webcam = webcam
         self.path = path
-        self.cap = cap
+        self.cap = cv2.VideoCapture(0)
         self.percentage = percentage
 
         self.cap.set(10, 160)  # brightness
