@@ -11,6 +11,7 @@ import Classes.VideoSetUp as VideoSetUp
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 pastObjectEdgePoint = [0, 0]
 SAMPLE_SIZE = 10
+TIME_INTERVAL = 1
 
 timeSampleArray = [time.time()] * SAMPLE_SIZE
 xPosSampleArray = [0] * SAMPLE_SIZE
@@ -19,20 +20,20 @@ yPosSampleArray = [0] * SAMPLE_SIZE
 xVelocityArray = [0] * SAMPLE_SIZE
 yVelocityArray = [0] * SAMPLE_SIZE
 
+timeVariable = time.time()
+timeLast = time.time()
+
 # Create new object #############
 image = VideoSetUp.IMGProcess()
 
 trackBar = VideoSetUp.TrackBar()
-
-timeVariable = time.time()
-timeLast = time.time()
 
 xMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, xPosSampleArray)
 yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
 tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 
 # Set object parameters #########
-image.webcam = True
+image.webcam = False
 image.path = 'Resources/6.png'
 image.percentage = 60
 
@@ -83,21 +84,23 @@ while True:
     else:
         pastObjectEdgePoint = objectEdgePoint  # update previous point
 
-    imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
-    cv2.imshow("Result", imgStack)
-
     xVelocityArray.append(xVector.get_velocity_vector())
     yVelocityArray.append(yVector.get_velocity_vector())
     timeVariable = time.time()
     
-    if timeVariable - timeLast >= 1:
+    if timeVariable - timeLast >= TIME_INTERVAL:
         xMovingAverage.avg_function(xVelocityArray, len(xVelocityArray))
         yMovingAverage.avg_function(yVelocityArray, len(yVelocityArray))
+
         print(xMovingAverage.averageArray)
         print(yMovingAverage.averageArray)
+
         xVelocityArray.clear()
         yVelocityArray.clear()
         timeLast = time.time()
+
+    imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
+    cv2.imshow("Result", imgStack)
 
     if not image.webcam:
         cv2.waitKey(0)
