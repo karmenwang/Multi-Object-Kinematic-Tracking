@@ -35,7 +35,6 @@ tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 image.webcam = True
 image.path = 'Resources/6.png'
 image.percentage = 60
-image.webcam = True
 
 while True:
     # Initializing img with an option to resize
@@ -59,6 +58,7 @@ while True:
 
     xPosSampleArray = xMovingAverage.ring
     yPosSampleArray = yMovingAverage.ring
+    timeSampleArray = tMovingAverage.ring
 
     # Compare object to threshold line
     try:
@@ -72,7 +72,7 @@ while True:
                                        xPosSampleArray[xMovingAverage.sampleNumber - 1],
                                        timeSampleArray[tMovingAverage.sampleNumber - 2],
                                        timeSampleArray[tMovingAverage.sampleNumber - 1])
-        yVector = Speed.CalculateSpeed(yPosSampleArray[xMovingAverage.sampleNumber - 2],
+        yVector = Speed.CalculateSpeed(yPosSampleArray[yMovingAverage.sampleNumber - 2],
                                        yPosSampleArray[yMovingAverage.sampleNumber - 1],
                                        timeSampleArray[tMovingAverage.sampleNumber - 2],
                                        timeSampleArray[tMovingAverage.sampleNumber - 1])
