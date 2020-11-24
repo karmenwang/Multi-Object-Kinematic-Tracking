@@ -83,6 +83,7 @@ class IMGProcess:
         self.cap.set(10, 160)  # brightness
         self.cap.set(3, 1920)  # width
         self.cap.set(4, 1080)  # height
+        # self.cap.set(5, 60)  # set frame rate
 
         self.imgDilation = 0
         self.colorMask = 0
@@ -107,7 +108,7 @@ class IMGProcess:
         threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
         threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
         imgCanny = cv2.Canny(imgGray, threshold1, threshold2)  # Apply edge detection (Canny)
-        kernel = np.ones((5, 5)) #return a 5x5 matrix filled with ones
+        kernel = np.ones((5, 5))  # return a 5x5 matrix filled with ones
         self.imgDilation = cv2.dilate(imgCanny, kernel, iterations=1)  # Process for filtering out background noise
 
     def object_edge(self, imgContour):
@@ -135,5 +136,3 @@ class IMGProcess:
         mask = cv2.inRange(imgHSV, lower, upper)
         self.colorMask = cv2.bitwise_and(img, img, mask=mask)
         # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-
-

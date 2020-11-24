@@ -35,7 +35,6 @@ tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 image.webcam = True
 image.path = 'Resources/6.png'
 image.percentage = 60
-image.webcam = True
 
 while True:
     # Initializing img with an option to resize
@@ -49,7 +48,6 @@ while True:
     # Line Threshold
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
     try:
-        # print(xMovingAverage.avg_function(objectEdgePoint[0]))
         xMovingAverage.ring_buffer(objectEdgePoint[0])
         yMovingAverage.ring_buffer(objectEdgePoint[1])
         tMovingAverage.ring_buffer(time.time())
