@@ -33,16 +33,15 @@ yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, yPosSampleArray)
 tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE, timeSampleArray)
 
 # Set object parameters #########
-image.webcam = False
-image.path = 'Resources/6.png'
+image.webcam = True
+image.path = 'Example_Code/shapes.png'
 image.percentage = 60
 
 while True:
     # Initializing img with an option to resize
     img = image.capture_image()
-
     imgContour = img.copy()
-    image.get_dilation_img(img)
+    image.get_canny_img(img)
     objectEdgePoint = image.object_edge(imgContour)
     image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
@@ -87,23 +86,20 @@ while True:
     xVelocityArray.append(xVector.get_velocity_vector())
     yVelocityArray.append(yVector.get_velocity_vector())
     timeVariable = time.time()
-    
+
     if timeVariable - timeLast >= TIME_INTERVAL:
         xMovingAverage.avg_function(xVelocityArray, len(xVelocityArray))
         yMovingAverage.avg_function(yVelocityArray, len(yVelocityArray))
 
-        print(xMovingAverage.averageArray)
-        print(yMovingAverage.averageArray)
+        print("X Velocity: %s   Y Velocity: %s" % (xMovingAverage.averageVelocity, yMovingAverage.averageVelocity))
 
         xVelocityArray.clear()
         yVelocityArray.clear()
         timeLast = time.time()
 
     imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
-    cv2.imshow("Result", imgStack)
+    # cv2.imshow("Result", imgStack)
+    cv2.imshow("Contour", imgContour)
 
-    if not image.webcam:
-        cv2.waitKey(0)
-
-    elif cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
+    if cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
         break

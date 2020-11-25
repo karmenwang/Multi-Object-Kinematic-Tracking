@@ -47,9 +47,9 @@ class TrackBar:
         # create track bars
         cv2.namedWindow("Parameters")
         cv2.resizeWindow("Parameters", 640, 240)
-        cv2.createTrackbar("Threshold1", "Parameters", 23, 255, empty)
-        cv2.createTrackbar("Threshold2", "Parameters", 20, 255, empty)
-        cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
+        cv2.createTrackbar("Threshold1", "Parameters", 50, 255, empty)
+        cv2.createTrackbar("Threshold2", "Parameters", 50, 255, empty)
+        cv2.createTrackbar("Area", "Parameters", 500, 30000, empty)
 
         cv2.namedWindow("HSV")
         cv2.resizeWindow("HSV", 640, 240)
@@ -77,7 +77,7 @@ class IMGProcess:
     def __init__(self, webcam=True, path=None, percentage=100):
         self.webcam = webcam
         self.path = path
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(1)
         self.percentage = percentage
 
         self.cap.set(10, 160)  # brightness
@@ -87,6 +87,8 @@ class IMGProcess:
 
         self.imgDilation = 0
         self.colorMask = 0
+        self.imgCanny = 0
+        self.objectCount = 0
 
     def capture_image(self):
         if self.webcam:
@@ -102,17 +104,27 @@ class IMGProcess:
 
         return imgResized
 
-    def get_dilation_img(self, img):
-        imgBlur = cv2.GaussianBlur(img, (7, 7), 1)  # Apply slight blur
-        imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)  # Apply grayscale
+    def get_canny_img(self, img):
+        imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 1)
         threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
         threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
-        imgCanny = cv2.Canny(imgGray, threshold1, threshold2)  # Apply edge detection (Canny)
-        kernel = np.ones((5, 5))  # return a 5x5 matrix filled with ones
-        self.imgDilation = cv2.dilate(imgCanny, kernel, iterations=1)  # Process for filtering out background noise
+        self.imgCanny = cv2.Canny(imgBlur, threshold1, threshold2)
+
+    def get_contour_img(self, imgContour):
+        contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > 500:
+                cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+                x, y, w, h = cv2.boundingRect(approx)
+
+                cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
     def object_edge(self, imgContour):
-        contours, hierarchy = cv2.findContours(self.imgDilation, cv2.RETR_EXTERNAL,
+        contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_NONE)  # Use edge detection map img
         for cnt in contours:
             area = cv2.contourArea(cnt)
