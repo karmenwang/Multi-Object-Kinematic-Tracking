@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import imutils
 
 
 def stack_images(scale, imgArray):
@@ -88,7 +89,7 @@ class IMGProcess:
         self.imgDilation = 0
         self.colorMask = 0
         self.imgCanny = 0
-        self.objectCount = 0
+        self.img_thresh = 0
 
     def capture_image(self):
         if self.webcam:
@@ -96,32 +97,43 @@ class IMGProcess:
         else:
             img = cv2.imread(self.path)
 
-        # Resizing and Cropping Original Photo
         width = int(img.shape[1] * self.percentage / 100)
-        height = int(img.shape[0] * self.percentage / 100)
-        dimensions = (width, height)
-        imgResized = cv2.resize(img, dimensions, interpolation=cv2.INTER_AREA)
+        img_resized = imutils.resize(img, width=width)
+        return img_resized
 
-        return imgResized
+    def prep_contour_img(self, img):
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_blur_gray = cv2.GaussianBlur(img_gray, (5, 5), 0)
 
-    def get_canny_img(self, img):
-        imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 1)
         threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
         threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
-        self.imgCanny = cv2.Canny(imgBlur, threshold1, threshold2)
+        self.imgCanny = cv2.Canny(img_blur_gray, threshold1, threshold2)
+        # consider adding a kernel & dilation or morph to rid noise (will need to tune to see if necessary)
 
-    def get_contour_img(self, imgContour):
+    def get_contour_img(self, img_contour, line_coord):
         contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > 500:
-                cv2.drawContours(imgContour, cnt, -1, (255, 0, 0), 3)
+                cv2.drawContours(img_contour, cnt, -1, (255, 0, 0), 3)
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 x, y, w, h = cv2.boundingRect(approx)
+                object_edge = (x + w, y + (h // 2))  # (right most point, center)
+                cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                if object_edge[0] >= line_coord:  # if object has crossed threshold along x
+                    cv2.circle(img_contour, object_edge, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
+                else:
+                    cv2.circle(img_contour, object_edge, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn red
+
+    def get_hsv_img(self, img, HSVArray):
+        imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
+        lower = np.array(HSVArray[0])  # lower bound
+        upper = np.array(HSVArray[1])  # upper bound
+        mask = cv2.inRange(imgHSV, lower, upper)
+        self.colorMask = cv2.bitwise_and(img, img, mask=mask)
+        # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
 
     def object_edge(self, imgContour):
         contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL,
@@ -140,11 +152,3 @@ class IMGProcess:
                 cv2.putText(imgContour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                             (36, 255, 12), 2)
                 return object_edge
-
-    def get_hsv_img(self, img, HSVArray):
-        imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
-        lower = np.array(HSVArray[0])  # lower bound
-        upper = np.array(HSVArray[1])  # upper bound
-        mask = cv2.inRange(imgHSV, lower, upper)
-        self.colorMask = cv2.bitwise_and(img, img, mask=mask)
-        # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)

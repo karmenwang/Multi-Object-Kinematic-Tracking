@@ -5,7 +5,7 @@ import time
 # file imports
 import Classes.SpeedDetection as Speed
 import Classes.MovingAverage as MovingAverage
-import Classes.VideoSetUp as VideoSetUp
+import Classes.IMGProcess as VideoSetUp
 
 # Constants #####################
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
@@ -41,12 +41,14 @@ while True:
     # Initializing img with an option to resize
     img = image.capture_image()
     imgContour = img.copy()
-    image.get_canny_img(img)
-    objectEdgePoint = image.object_edge(imgContour)
+    image.prep_contour_img(img)
+    objectEdgePoint = image.get_contour_img(imgContour, LINE_COORD[0][0])
+    # objectEdgePoint = image.object_edge(imgContour)
     image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
     # Line Threshold
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
+
     try:
         xMovingAverage.ring_buffer(objectEdgePoint[0])
         yMovingAverage.ring_buffer(objectEdgePoint[1])
@@ -61,11 +63,6 @@ while True:
 
     # Compare object to threshold line
     try:
-        if objectEdgePoint[0] >= LINE_COORD[0][0]:  # if object has crossed threshold along x
-            cv2.circle(imgContour, objectEdgePoint, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
-
-        else:
-            cv2.circle(imgContour, objectEdgePoint, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn green
 
         xVector = Speed.CalculateSpeed(xPosSampleArray[xMovingAverage.sampleNumber - 2],
                                        xPosSampleArray[xMovingAverage.sampleNumber - 1],
