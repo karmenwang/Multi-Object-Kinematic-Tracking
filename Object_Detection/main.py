@@ -42,57 +42,61 @@ while True:
     img = image.capture_image()
     imgContour = img.copy()
     image.prep_contour_img(img)
-    objectEdgePoint = image.get_contour_img(imgContour, LINE_COORD[0][0])
+    objectEdgePoint_array = image.get_contour_img(imgContour, LINE_COORD[0][0])
     # objectEdgePoint = image.object_edge(imgContour)
     image.get_hsv_img(img, trackBar.HSVMinMaxArray)
 
     # Line Threshold
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
-    try:
-        xMovingAverage.ring_buffer(objectEdgePoint[0])
-        yMovingAverage.ring_buffer(objectEdgePoint[1])
-        tMovingAverage.ring_buffer(time.time())
+    for objectEdgePoint in objectEdgePoint_array:
+        cv2.putText(imgContour, "%s" % objectEdgePoint_array.index(objectEdgePoint),
+                    (objectEdgePoint[0]+10, objectEdgePoint[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (36, 255, 12), 2)
+        try:
+            xMovingAverage.ring_buffer(objectEdgePoint[0])
+            yMovingAverage.ring_buffer(objectEdgePoint[1])
+            tMovingAverage.ring_buffer(time.time())
 
-    except TypeError:
-        print("No object detected")
+        except TypeError:
+            print("No object detected")
 
-    xPosSampleArray = xMovingAverage.ring
-    yPosSampleArray = yMovingAverage.ring
-    timeSampleArray = tMovingAverage.ring
+        xPosSampleArray = xMovingAverage.ring
+        yPosSampleArray = yMovingAverage.ring
+        timeSampleArray = tMovingAverage.ring
 
-    # Compare object to threshold line
-    try:
+        print(str(xPosSampleArray))
 
-        xVector = Speed.CalculateSpeed(xPosSampleArray[xMovingAverage.sampleNumber - 2],
-                                       xPosSampleArray[xMovingAverage.sampleNumber - 1],
-                                       timeSampleArray[tMovingAverage.sampleNumber - 2],
-                                       timeSampleArray[tMovingAverage.sampleNumber - 1])
-        yVector = Speed.CalculateSpeed(yPosSampleArray[yMovingAverage.sampleNumber - 2],
-                                       yPosSampleArray[yMovingAverage.sampleNumber - 1],
-                                       timeSampleArray[tMovingAverage.sampleNumber - 2],
-                                       timeSampleArray[tMovingAverage.sampleNumber - 1])
+        # Compare object to threshold line
+        try:
+            xVector = Speed.CalculateSpeed(xPosSampleArray[xMovingAverage.sampleNumber - 2],
+                                           xPosSampleArray[xMovingAverage.sampleNumber - 1],
+                                           timeSampleArray[tMovingAverage.sampleNumber - 2],
+                                           timeSampleArray[tMovingAverage.sampleNumber - 1])
+            yVector = Speed.CalculateSpeed(yPosSampleArray[yMovingAverage.sampleNumber - 2],
+                                           yPosSampleArray[yMovingAverage.sampleNumber - 1],
+                                           timeSampleArray[tMovingAverage.sampleNumber - 2],
+                                           timeSampleArray[tMovingAverage.sampleNumber - 1])
 
-    except TypeError:
-        objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point
-        print("Type Error")
+        except TypeError:
+            objectEdgePoint = pastObjectEdgePoint  # if TypeError occurs previous point
+            print("Type Error")
 
-    else:
-        pastObjectEdgePoint = objectEdgePoint  # update previous point
+        else:
+            pastObjectEdgePoint = objectEdgePoint  # update previous point
 
-    xVelocityArray.append(xVector.get_velocity_vector())
-    yVelocityArray.append(yVector.get_velocity_vector())
-    timeVariable = time.time()
+        xVelocityArray.append(xVector.get_velocity_vector())
+        yVelocityArray.append(yVector.get_velocity_vector())
+        timeVariable = time.time()
 
-    if timeVariable - timeLast >= TIME_INTERVAL:
-        xMovingAverage.avg_function(xVelocityArray, len(xVelocityArray))
-        yMovingAverage.avg_function(yVelocityArray, len(yVelocityArray))
+        # print(str(xVelocityArray) + "   " + str(yVelocityArray))
 
-        print("X Velocity: %s   Y Velocity: %s" % (xMovingAverage.averageVelocity, yMovingAverage.averageVelocity))
+        if timeVariable - timeLast >= TIME_INTERVAL:
+            xMovingAverage.avg_function(xVelocityArray, len(xVelocityArray))
+            yMovingAverage.avg_function(yVelocityArray, len(yVelocityArray))
 
-        xVelocityArray.clear()
-        yVelocityArray.clear()
-        timeLast = time.time()
+            xVelocityArray.clear()
+            yVelocityArray.clear()
+            timeLast = time.time()
 
     imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
     # cv2.imshow("Result", imgStack)

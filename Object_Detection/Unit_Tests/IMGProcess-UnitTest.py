@@ -18,7 +18,8 @@ while True:
     image.prep_contour_img(img)
     cv2.line(imgContour, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
-    image.get_contour_img(imgContour, LINE_COORD[0][0])
+    object_edge_array = image.get_contour_img(imgContour, LINE_COORD[0][0])
+    # print(object_edge_array)
 
     # HSV color detection
     image.get_hsv_img(img, trackBar.HSVMinMaxArray)
