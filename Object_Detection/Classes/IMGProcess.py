@@ -122,6 +122,8 @@ class IMGProcess:
                 x, y, w, h = cv2.boundingRect(approx)
                 object_edge = (x + w, y + (h // 2))  # (right most point, center)
                 cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                # cv2.putText(img_contour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                #             (36, 255, 12), 2)
 
                 if object_edge[0] >= line_coord:  # if object has crossed threshold along x
                     cv2.circle(img_contour, object_edge, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
@@ -137,21 +139,3 @@ class IMGProcess:
         mask = cv2.inRange(imgHSV, lower, upper)
         self.colorMask = cv2.bitwise_and(img, img, mask=mask)
         # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-
-    def object_edge(self, imgContour):
-        contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_NONE)  # Use edge detection map img
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            areaMin = cv2.getTrackbarPos("Area", "Parameters")  # Min area set by trackbar
-            if area > areaMin:
-                cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 2)
-                perimeter = cv2.arcLength(cnt, True)
-                approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
-                x, y, w, h = cv2.boundingRect(approx)  # Find bounding box
-                object_edge = (x + w, y + (h // 2))  # (right most point, center)
-
-                cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(imgContour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                            (36, 255, 12), 2)
-                return object_edge

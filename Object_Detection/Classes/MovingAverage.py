@@ -12,6 +12,7 @@ class MovingAverage:
         self.sampleNumber = sampleNumber
         self.indexNumber = 1
         self.sampleArray = sampleArray
+
         self.indexCounter = 1  # checks to see if our array has been filled up
         self.ring = RingBuffer(sampleNumber, float, True)
         self.averageVelocity = None
