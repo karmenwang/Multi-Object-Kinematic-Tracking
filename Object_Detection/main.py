@@ -12,7 +12,7 @@ import Classes.Scheduler as Scheduler
 # Constants #####################
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 SAMPLE_SIZE = 10
-TIME_INTERVAL = 1000
+TIME_INTERVAL = 0.000001
 var = 0
 
 # Create new object #############
@@ -52,7 +52,7 @@ while True:
 
         else:
             objectOnScreen.determineVectors(objectEdgePoint=objectEdgePoint)
-            objectSchedule.scheduler.enter(1, 0, objectOnScreen.AverageCalculator(), argument=(var,))
+            objectSchedule.scheduler.enter(TIME_INTERVAL, 0, objectOnScreen.AverageCalculator)
 
     imgStack = VideoSetUp.stack_images(0.8, ([img, imgContour, image.colorMask]))
     # cv2.imshow("Result", imgStack)
