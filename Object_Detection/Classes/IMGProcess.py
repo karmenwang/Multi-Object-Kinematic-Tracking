@@ -139,3 +139,21 @@ class IMGProcess:
         mask = cv2.inRange(imgHSV, lower, upper)
         self.colorMask = cv2.bitwise_and(img, img, mask=mask)
         # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+    # similar to get_contour_img but returns the bounding box
+    def get_bbox(self, img_contour):
+        contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        rect_array = []
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > 500:
+                cv2.drawContours(img_contour, cnt, -1, (255, 0, 0), 3)
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+                x, y, w, h = cv2.boundingRect(approx)
+                rect = (x, y, x + w, y + h)  # rectangle coordinates
+                cv2.rectangle(img_contour, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 2)
+
+                rect_array.append(rect)
+                print(rect_array)
+        return rect_array

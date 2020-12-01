@@ -22,7 +22,7 @@ trackBar = VideoSetUp.TrackBar()
 
 # Set object parameters #########
 image.webcam = True
-image.path = 'Example_Code/shapes.png'
+image.path = 'Example_Code/Shape_Detection/shapes.png'
 image.percentage = 60
 
 while True:
