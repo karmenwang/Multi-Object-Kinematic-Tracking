@@ -112,7 +112,7 @@ class IMGProcess:
 
     def get_contour_img(self, img_contour, line_coord):
         contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        object_edge_array = []
+        rect_array = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > 500:
@@ -120,17 +120,17 @@ class IMGProcess:
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 x, y, w, h = cv2.boundingRect(approx)
+                rect = (x, y, x + w, y + h)  # rectangle coordinates
                 object_edge = (x + w, y + (h // 2))  # (right most point, center)
-                cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                # cv2.putText(img_contour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                #             (36, 255, 12), 2)
+                cv2.rectangle(img_contour, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 2)
 
                 if object_edge[0] >= line_coord:  # if object has crossed threshold along x
                     cv2.circle(img_contour, object_edge, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
                 else:
                     cv2.circle(img_contour, object_edge, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn red
-                object_edge_array.append(object_edge)
-        return object_edge_array
+
+                rect_array.append(rect)
+        return rect_array
 
     def get_hsv_img(self, img, HSVArray):
         imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
