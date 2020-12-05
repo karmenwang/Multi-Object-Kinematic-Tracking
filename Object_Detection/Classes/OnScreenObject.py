@@ -1,6 +1,6 @@
 import time
-import Classes.SpeedDetection as Speed
-import Classes.MovingAverage as MovingAverage
+from Classes.CalculateSpeed import CalculateSpeed
+from Classes.CalculateAverage import CalculateAverage
 
 
 class OnScreenObject:
@@ -15,9 +15,9 @@ class OnScreenObject:
 
         self.pastObjectEdgePoint = [0, 0]
 
-        self.xMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE)
-        self.yMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE)
-        self.tMovingAverage = MovingAverage.MovingAverage(SAMPLE_SIZE)
+        self.xMovingAverage = CalculateAverage(SAMPLE_SIZE)
+        self.yMovingAverage = CalculateAverage(SAMPLE_SIZE)
+        self.tMovingAverage = CalculateAverage(SAMPLE_SIZE)
 
         self.xVector = 0
         self.yVector = 0
@@ -41,14 +41,14 @@ class OnScreenObject:
         self.timeSampleArray = self.tMovingAverage.ring
         # print(str(self.objectID) + str(self.xPosSampleArray))
 
-        self.xVector = Speed.CalculateSpeed(self.xPosSampleArray[self.xMovingAverage.sampleNumber - 2],
-                                            self.xPosSampleArray[self.xMovingAverage.sampleNumber - 1],
-                                            self.timeSampleArray[self.tMovingAverage.sampleNumber - 2],
-                                            self.timeSampleArray[self.tMovingAverage.sampleNumber - 1])
-        self.yVector = Speed.CalculateSpeed(self.yPosSampleArray[self.yMovingAverage.sampleNumber - 2],
-                                            self.yPosSampleArray[self.yMovingAverage.sampleNumber - 1],
-                                            self.timeSampleArray[self.tMovingAverage.sampleNumber - 2],
-                                            self.timeSampleArray[self.tMovingAverage.sampleNumber - 1])
+        self.xVector = CalculateSpeed(self.xPosSampleArray[self.xMovingAverage.sample_number - 2],
+                                            self.xPosSampleArray[self.xMovingAverage.sample_number - 1],
+                                            self.timeSampleArray[self.tMovingAverage.sample_number - 2],
+                                            self.timeSampleArray[self.tMovingAverage.sample_number - 1])
+        self.yVector = CalculateSpeed(self.yPosSampleArray[self.yMovingAverage.sample_number - 2],
+                                            self.yPosSampleArray[self.yMovingAverage.sample_number - 1],
+                                            self.timeSampleArray[self.tMovingAverage.sample_number - 2],
+                                            self.timeSampleArray[self.tMovingAverage.sample_number - 1])
 
         self.xVelocityArray.append(self.xVector.get_velocity_vector())
         self.yVelocityArray.append(self.yVector.get_velocity_vector())
