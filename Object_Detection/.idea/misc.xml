@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+<<<<<<< HEAD
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (Object_Detection) (2)" project-jdk-type="Python SDK" />
+=======
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (OpenCVPythonTutorial)" project-jdk-type="Python SDK" />
+>>>>>>> Implementing_Proper_Ring_Buffers
 </project>

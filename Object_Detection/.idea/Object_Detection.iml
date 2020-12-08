@@ -4,7 +4,11 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
+<<<<<<< HEAD
     <orderEntry type="inheritedJdk" />
+=======
+    <orderEntry type="jdk" jdkName="Python 3.8 (OpenCVPythonTutorial)" jdkType="Python SDK" />
+>>>>>>> Implementing_Proper_Ring_Buffers
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

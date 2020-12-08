@@ -1,11 +1,10 @@
 # import the necessary packages
-from Classes.CentroidTracker import CentroidTracker
+from Object_Detection.Classes.CentroidTracker import CentroidTracker
 import Classes.IMGProcess as VideoSetUp
 import cv2
 
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker()
-(H, W) = (None, None)
 image = VideoSetUp.IMGProcess()
 
 # initialize the video stream and allow the camera sensor to warmup
@@ -17,14 +16,14 @@ while True:
     imgContour = img.copy()
     image.prep_contour_img(img)
 
-    rects = []
+    bounding_box_array = []
 
-    rects = image.get_bbox(imgContour)
-    print(rects)
+    bounding_box_array = image.get_bbox(imgContour)
+    print(bounding_box_array)
 
     # update our centroid tracker using the computed set of bounding
     # box rectangles
-    objects = ct.update(rects)
+    objects = ct.update(bounding_box_array)
 
     # loop over the tracked objects
     for (objectID, centroid) in objects.items():
