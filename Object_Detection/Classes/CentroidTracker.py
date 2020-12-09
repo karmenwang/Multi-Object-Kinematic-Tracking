@@ -2,10 +2,11 @@
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+from numpy_ringbuffer import RingBuffer
 
 
 class CentroidTracker:
-    def __init__(self, maxDisappeared=20):
+    def __init__(self, maxDisappeared=50, maxCapacity=None):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
         # ID to its centroid and number of consecutive frames it has
@@ -13,6 +14,7 @@ class CentroidTracker:
         self.nextObjectID = 0
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
+        self.disappeared_objects = RingBuffer(capacity=maxCapacity, dtype=int)
 
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
@@ -25,12 +27,15 @@ class CentroidTracker:
         self.objects[self.nextObjectID] = centroid
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
+        if len(self.disappeared_objects) != 0:
+            self.disappeared_objects.popleft()  # only works under the ideal conditions lol pls fix this
 
     def deregister(self, objectID):
         # to deregister an object ID we delete the object ID from
         # both of our respective dictionaries
         del self.objects[objectID]
         del self.disappeared[objectID]
+        self.disappeared_objects.append(objectID)
 
     def update(self, bounding_boxes):
         # check to see if the list of input bounding box rectangles

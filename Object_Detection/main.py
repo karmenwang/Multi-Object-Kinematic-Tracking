@@ -12,7 +12,7 @@ from Classes.Scheduler import Scheduler
 from Classes.CalculateAverage import CalculateAverage
 
 # Constants/Initialization ######
-MAX_CAPACITY = 4
+MAX_CAPACITY = 3
 SAMPLE_SIZE = 5
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 TIME_INTERVAL = 0.000001
@@ -26,7 +26,7 @@ past_object_num = 0
 image = IMGProcess()
 object_scheduler = Scheduler()
 track_bar = TrackBar()
-centroid_tracker = CentroidTracker()
+centroid_tracker = CentroidTracker(maxCapacity=MAX_CAPACITY)
 calculate_x_average = CalculateAverage()
 calculate_y_average = CalculateAverage()
 calculate_t_average = CalculateAverage()
@@ -82,23 +82,29 @@ while True:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.circle(img_results, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
-        # print("should be: " + str(objectID) + " " + str(centroid[0]) + " " + str(centroid[1]))
         try:
+            for index in range(0, int(objectID)):
+                objects_2D_ring_buffer_x[index].append(0)   # fill ring buffer with 0 to calculate speed for new obj 0
+                objects_2D_ring_buffer_y[index].append(0)
+                objects_2D_ring_buffer_t[index].append(0)
+
             objects_2D_ring_buffer_x[objectID].append(centroid[0])
             objects_2D_ring_buffer_y[objectID].append(centroid[1])
             objects_2D_ring_buffer_t[objectID].append(time.time())
-            # print("results X: " + str(objectID) + " " + str(objects_2D_ring_buffer_x))
-            # print("results Y: " + str(objectID) + " " + str(objects_2D_ring_buffer_y))
-            # print("results Time: " + str(objectID) + " " + str(objects_2D_ring_buffer_t))
 
-        except (IndexError, AttributeError):
-            print("index out of range")
-    print(objects)
-    print(str(objects_2D_ring_buffer_x._left_index) + str(objects_2D_ring_buffer_x._right_index) + str(objects_2D_ring_buffer_x.maxlen))
+        except (IndexError, AttributeError, TypeError):
+            if IndexError:
+                print("Index out of range")
+            elif AttributeError:
+                print("Attribute Error")
+            elif TypeError:
+                print("Type Error")
 
     if objects_2D_ring_buffer_x._right_index == objects_2D_ring_buffer_x.maxlen:
-        print("object_2D_ring_buffer has been filled")
         centroid_tracker.nextObjectID = centroid_tracker.nextObjectID % MAX_CAPACITY
+
+    print("detected objects" + str(objects))
+    print("disappeared ObjectIDs" + str(centroid_tracker.disappeared_objects))
 
     # for (objectID, centroid) in objects.items():
     #     try:

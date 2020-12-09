@@ -1,7 +1,6 @@
 from numpy_ringbuffer import RingBuffer
 count = 0
 count1 = 2
-r = RingBuffer(capacity=5, dtype=int)
 length = 2
 ring_buffer_2d = []
 created = False
@@ -20,7 +19,10 @@ while count < 20:
             ring_buffer_2d[i].append(count)
     # print(str(ring_buffer_2d[0].left_index) + " " + str(ring_buffer_2d[0].right_index))
     count += 1
-    print(ring_buffer_2d[0])
+print(ring_buffer_2d)
+ring_buffer_2d.pop(0)
+print(ring_buffer_2d)
+
 
 
 
