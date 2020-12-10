@@ -14,7 +14,8 @@ class CentroidTracker:
         self.nextObjectID = 0
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
-        self.disappeared_objects = RingBuffer(capacity=maxCapacity, dtype=int)
+        self.disappeared_objects = []*maxCapacity
+        self.cleared = True
 
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
@@ -25,10 +26,13 @@ class CentroidTracker:
         # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.nextObjectID] = centroid
+
+        if self.nextObjectID in self.disappeared_objects:
+            self.disappeared_objects.pop(self.disappeared_objects.index(self.nextObjectID))
+            print("hi")
+
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
-        if len(self.disappeared_objects) != 0:
-            self.disappeared_objects.popleft()  # only works under the ideal conditions lol pls fix this
 
     def deregister(self, objectID):
         # to deregister an object ID we delete the object ID from
@@ -36,6 +40,7 @@ class CentroidTracker:
         del self.objects[objectID]
         del self.disappeared[objectID]
         self.disappeared_objects.append(objectID)
+        self.cleared = False
 
     def update(self, bounding_boxes):
         # check to see if the list of input bounding box rectangles

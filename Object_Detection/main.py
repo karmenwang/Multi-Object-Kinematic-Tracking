@@ -12,7 +12,7 @@ from Classes.Scheduler import Scheduler
 from Classes.CalculateAverage import CalculateAverage
 
 # Constants/Initialization ######
-MAX_CAPACITY = 3
+MAX_CAPACITY = 5
 SAMPLE_SIZE = 5
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 TIME_INTERVAL = 0.000001
@@ -58,7 +58,6 @@ while True:
     except RuntimeError:
         print("OrderedDict mutated during iteration")
 
-
     # create initial Ring Buffer indexes based on detected objects
     if not created_2d_ring_buffer:
         for objects_detected in range(0, len(bounding_box_array)):
@@ -76,6 +75,15 @@ while True:
             objects_2D_ring_buffer_t.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
         past_object_num = len(objects)
 
+    if not centroid_tracker.cleared:
+        for index in range(0, len(objects_2D_ring_buffer_x)):
+            for i in range(0, SAMPLE_SIZE):
+                if index in centroid_tracker.disappeared_objects:
+                    objects_2D_ring_buffer_x[index].pop()  # fill ring buffer with 0 to calculate speed for new obj 0
+                    objects_2D_ring_buffer_y[index].pop()
+                    objects_2D_ring_buffer_t[index].pop()
+        centroid_tracker.cleared = True
+
     for (objectID, centroid) in objects.items():
         # draw both the ID of the object and the centroid
         cv2.putText(img_results, "ID {}".format(objectID), (centroid[0] - 10, centroid[1] - 10),
@@ -83,11 +91,6 @@ while True:
         cv2.circle(img_results, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
         try:
-            for index in range(0, int(objectID)):
-                objects_2D_ring_buffer_x[index].append(0)   # fill ring buffer with 0 to calculate speed for new obj 0
-                objects_2D_ring_buffer_y[index].append(0)
-                objects_2D_ring_buffer_t[index].append(0)
-
             objects_2D_ring_buffer_x[objectID].append(centroid[0])
             objects_2D_ring_buffer_y[objectID].append(centroid[1])
             objects_2D_ring_buffer_t[objectID].append(time.time())
@@ -104,6 +107,7 @@ while True:
         centroid_tracker.nextObjectID = centroid_tracker.nextObjectID % MAX_CAPACITY
 
     print("detected objects" + str(objects))
+    print(objects_2D_ring_buffer_x)
     print("disappeared ObjectIDs" + str(centroid_tracker.disappeared_objects))
 
     # for (objectID, centroid) in objects.items():

@@ -17,11 +17,12 @@ while count < 20:
             count1 = count1*2
         else:
             ring_buffer_2d[i].append(count)
-    # print(str(ring_buffer_2d[0].left_index) + " " + str(ring_buffer_2d[0].right_index))
     count += 1
 print(ring_buffer_2d)
-ring_buffer_2d.pop(0)
+for i in range(0, 5):
+    ring_buffer_2d[0].popleft()
 print(ring_buffer_2d)
+
 
 
 
