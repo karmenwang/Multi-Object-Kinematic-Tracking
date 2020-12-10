@@ -1,6 +1,7 @@
 # package imports (go to file > settings > project > python interpreter > + in top right > add the following:
-import cv2  # opencv_python
+import cv2
 from numpy_ringbuffer import RingBuffer
+import numpy as np
 import time
 
 # file imports
@@ -12,17 +13,17 @@ from Classes.Scheduler import Scheduler
 from Classes.CalculateAverage import CalculateAverage
 
 # Constants/Initialization ######
-MAX_CAPACITY = 5
+MAX_CAPACITY = 10
 SAMPLE_SIZE = 5
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 TIME_INTERVAL = 0.000001
-objects_2D_ring_buffer_x = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
-objects_2D_ring_buffer_y = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
-objects_2D_ring_buffer_t = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
+objects_2D_ring_buffer_x = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # Create parent RB to house all X data
+objects_2D_ring_buffer_y = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Y data
+objects_2D_ring_buffer_t = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Time data
 created_2d_ring_buffer = False
-past_object_num = 0
+object_ID_prev_max = 0
 
-# Create new object #############
+# Object instances #############
 image = IMGProcess()
 object_scheduler = Scheduler()
 track_bar = TrackBar()
@@ -50,39 +51,41 @@ while True:
     # Draw line Threshold
     cv2.line(img_results, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
-    # update centroid tracker with bounding boxes of detected objects
-    # objects = centroid_tracker.update(bounding_box_array)
-
+    # Get dictionary of detected objects' ID and centroid
     try:
         objects = centroid_tracker.update(bounding_box_array)
     except RuntimeError:
         print("OrderedDict mutated during iteration")
 
-    # create initial Ring Buffer indexes based on detected objects
+    # Create initial Ring Buffer indexes based on detected objects
     if not created_2d_ring_buffer:
         for objects_detected in range(0, len(bounding_box_array)):
-
             objects_2D_ring_buffer_x.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
             objects_2D_ring_buffer_y.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
             objects_2D_ring_buffer_t.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
             created_2d_ring_buffer = True
-            past_object_num = len(objects)
 
-    if len(objects) > past_object_num:
-        for new_objects_detected in range(0, len(objects) - past_object_num):
-            objects_2D_ring_buffer_x.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
-            objects_2D_ring_buffer_y.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
-            objects_2D_ring_buffer_t.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
-        past_object_num = len(objects)
+    # Append more ring buffers as more objects are detected
+    for object_ID, _ in objects.items():
+        if object_ID > object_ID_prev_max:
+            for new_objects_detected in range(0, object_ID - object_ID_prev_max):
+                objects_2D_ring_buffer_x.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
+                objects_2D_ring_buffer_y.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
+                objects_2D_ring_buffer_t.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
+            object_ID_prev_max = object_ID
 
-    if not centroid_tracker.cleared:
+    # Clear ring buffers for objects that have disappeared
+    if not centroid_tracker.cleared_disappeared_objects_ring_buffer:
         for index in range(0, len(objects_2D_ring_buffer_x)):
-            for i in range(0, SAMPLE_SIZE):
-                if index in centroid_tracker.disappeared_objects:
-                    objects_2D_ring_buffer_x[index].pop()  # fill ring buffer with 0 to calculate speed for new obj 0
-                    objects_2D_ring_buffer_y[index].pop()
-                    objects_2D_ring_buffer_t[index].pop()
-        centroid_tracker.cleared = True
+            try:
+                for i in range(0, SAMPLE_SIZE):     # Iterate through child ring buffer to clear values
+                    if index in centroid_tracker.disappeared_objects:
+                        objects_2D_ring_buffer_x[index].pop()
+                        objects_2D_ring_buffer_y[index].pop()
+                        objects_2D_ring_buffer_t[index].pop()
+            except IndexError:
+                print("index " + str(index) + " already cleared")
+        centroid_tracker.cleared_disappeared_objects_ring_buffer = True
 
     for (objectID, centroid) in objects.items():
         # draw both the ID of the object and the centroid
@@ -90,25 +93,17 @@ while True:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.circle(img_results, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
-        try:
-            objects_2D_ring_buffer_x[objectID].append(centroid[0])
-            objects_2D_ring_buffer_y[objectID].append(centroid[1])
-            objects_2D_ring_buffer_t[objectID].append(time.time())
+        # Store centroid points into child ring buffer for respective objects
+        objects_2D_ring_buffer_x[objectID].append(centroid[0])
+        objects_2D_ring_buffer_y[objectID].append(centroid[1])
+        objects_2D_ring_buffer_t[objectID].append(time.time())
 
-        except (IndexError, AttributeError, TypeError):
-            if IndexError:
-                print("Index out of range")
-            elif AttributeError:
-                print("Attribute Error")
-            elif TypeError:
-                print("Type Error")
-
+    # Manages when ID number go above the Max capacity
     if objects_2D_ring_buffer_x._right_index == objects_2D_ring_buffer_x.maxlen:
         centroid_tracker.nextObjectID = centroid_tracker.nextObjectID % MAX_CAPACITY
 
     print("detected objects" + str(objects))
     print(objects_2D_ring_buffer_x)
-    print("disappeared ObjectIDs" + str(centroid_tracker.disappeared_objects))
 
     # for (objectID, centroid) in objects.items():
     #     try:

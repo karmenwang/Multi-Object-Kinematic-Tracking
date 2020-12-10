@@ -21,7 +21,7 @@ while count < 20:
 print(ring_buffer_2d)
 for i in range(0, 5):
     ring_buffer_2d[0].popleft()
-print(ring_buffer_2d)
+print(ring_buffer_2d[0][])
 
 
 

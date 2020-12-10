@@ -15,7 +15,7 @@ class CentroidTracker:
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
         self.disappeared_objects = []*maxCapacity
-        self.cleared = True
+        self.cleared_disappeared_objects_ring_buffer = True
 
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
@@ -40,7 +40,7 @@ class CentroidTracker:
         del self.objects[objectID]
         del self.disappeared[objectID]
         self.disappeared_objects.append(objectID)
-        self.cleared = False
+        self.cleared_disappeared_objects_ring_buffer = False
 
     def update(self, bounding_boxes):
         # check to see if the list of input bounding box rectangles
