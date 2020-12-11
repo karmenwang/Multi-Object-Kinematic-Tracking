@@ -10,16 +10,22 @@ from Classes.IMGProcess import IMGProcess
 from Classes.IMGProcess import TrackBar
 from Classes.IMGProcess import stack_images
 from Classes.Scheduler import Scheduler
-from Classes.CalculateAverage import CalculateAverage
+from Classes.CalculateSpeed import CalculateSpeed
 
 # Constants/Initialization ######
 MAX_CAPACITY = 10
 SAMPLE_SIZE = 5
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 TIME_INTERVAL = 0.000001
+
 objects_2D_ring_buffer_x = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # Create parent RB to house all X data
 objects_2D_ring_buffer_y = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Y data
 objects_2D_ring_buffer_t = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Time data
+
+xVelocityArray = []*MAX_CAPACITY
+yVelocityArray = []*MAX_CAPACITY
+xVector = 0
+yVector = 0
 created_2d_ring_buffer = False
 object_ID_prev_max = 0
 
@@ -28,9 +34,9 @@ image = IMGProcess()
 object_scheduler = Scheduler()
 track_bar = TrackBar()
 centroid_tracker = CentroidTracker(maxCapacity=MAX_CAPACITY)
-calculate_x_average = CalculateAverage()
-calculate_y_average = CalculateAverage()
-calculate_t_average = CalculateAverage()
+# calculate_x_average = CalculateAverage()
+# calculate_y_average = CalculateAverage()
+# calculate_t_average = CalculateAverage()
 
 # Set object parameters #########
 image.webcam = True
@@ -76,34 +82,54 @@ while True:
 
     # Clear ring buffers for objects that have disappeared
     if not centroid_tracker.cleared_disappeared_objects_ring_buffer:
-        for index in range(0, len(objects_2D_ring_buffer_x)):
+        for object_index in range(0, len(objects_2D_ring_buffer_x)):
             try:
-                for i in range(0, SAMPLE_SIZE):     # Iterate through child ring buffer to clear values
+                for index in range(0, SAMPLE_SIZE):     # Iterate through child ring buffer to clear values
                     if index in centroid_tracker.disappeared_objects:
-                        objects_2D_ring_buffer_x[index].pop()
-                        objects_2D_ring_buffer_y[index].pop()
-                        objects_2D_ring_buffer_t[index].pop()
+                        objects_2D_ring_buffer_x[object_index].pop()
+                        objects_2D_ring_buffer_y[object_index].pop()
+                        objects_2D_ring_buffer_t[object_index].pop()
             except IndexError:
                 print("index " + str(index) + " already cleared")
         centroid_tracker.cleared_disappeared_objects_ring_buffer = True
 
-    for (objectID, centroid) in objects.items():
+    for (object_ID, centroid) in objects.items():
         # draw both the ID of the object and the centroid
-        cv2.putText(img_results, "ID {}".format(objectID), (centroid[0] - 10, centroid[1] - 10),
+        cv2.putText(img_results, "ID {}".format(object_ID), (centroid[0] - 10, centroid[1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.circle(img_results, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
         # Store centroid points into child ring buffer for respective objects
-        objects_2D_ring_buffer_x[objectID].append(centroid[0])
-        objects_2D_ring_buffer_y[objectID].append(centroid[1])
-        objects_2D_ring_buffer_t[objectID].append(time.time())
+        objects_2D_ring_buffer_x[object_ID].append(centroid[0])
+        objects_2D_ring_buffer_y[object_ID].append(centroid[1])
+        objects_2D_ring_buffer_t[object_ID].append(time.time())
 
     # Manages when ID number go above the Max capacity
     if objects_2D_ring_buffer_x._right_index == objects_2D_ring_buffer_x.maxlen:
         centroid_tracker.nextObjectID = centroid_tracker.nextObjectID % MAX_CAPACITY
 
     print("detected objects" + str(objects))
-    print(objects_2D_ring_buffer_x)
+    print("results x array" + str(objects_2D_ring_buffer_x))
+
+    # Calculate Vectors
+    for vector_object_index_number in range(0, len(objects_2D_ring_buffer_x)):
+        try:
+            xVector = CalculateSpeed(objects_2D_ring_buffer_x[vector_object_index_number][len(objects_2D_ring_buffer_x[object_ID]) - 2],
+                                     objects_2D_ring_buffer_x[vector_object_index_number][len(objects_2D_ring_buffer_x[object_ID]) - 1],
+                                     objects_2D_ring_buffer_t[vector_object_index_number][len(objects_2D_ring_buffer_x[object_ID]) - 2],
+                                     objects_2D_ring_buffer_t[vector_object_index_number][len(objects_2D_ring_buffer_x[object_ID]) - 1])
+        #     # yVector = CalculateSpeed(self.yPosSampleArray[self.yMovingAverage.sample_number - 2],
+        #     #                               self.yPosSampleArray[self.yMovingAverage.sample_number - 1],
+        #     #                               self.timeSampleArray[self.tMovingAverage.sample_number - 2],
+        #     #                               self.timeSampleArray[self.tMovingAverage.sample_number - 1])
+        #
+            # xVelocityArray.append(xVector.get_velocity_vector())
+            # print(xVelocityArray)
+            # yVelocityArray.append(self.yVector.get_velocity_vector())
+        except (TypeError, IndexError):
+            print("wait for more data points")
+
+
 
     # for (objectID, centroid) in objects.items():
     #     try:
