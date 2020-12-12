@@ -1,4 +1,4 @@
-class CalculateSpeed:
+class CalculateVelocity:
 
     def __init__(self, lastPoint, current_point, lastPoint_time, current_point_time):
         self.current_point = current_point
