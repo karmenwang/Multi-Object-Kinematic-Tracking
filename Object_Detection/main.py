@@ -9,24 +9,21 @@ from Classes.CentroidTracker import CentroidTracker
 from Classes.IMGProcess import IMGProcess
 from Classes.IMGProcess import TrackBar
 from Classes.IMGProcess import stack_images
-from Classes.Scheduler import Scheduler
 from Classes.CalculateVelocity import CalculateVelocity
-from Classes.CalculateAverage import CalculateAverage
 
 # Constants/Initialization ######
 MAX_CAPACITY = 10
 SAMPLE_SIZE = 10
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
-TIME_INTERVAL = 0.000001
 
 objects_2D_ring_buffer_x = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # Create parent RB to house all X data
 objects_2D_ring_buffer_y = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Y data
 objects_2D_ring_buffer_t = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # '' Time data
 
-x_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
+x_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # array for collecting vectors from each sample data
 y_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
 
-x_average_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
+x_average_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)  # use x_velocity_array to create the average
 y_average_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
 
 created_2d_ring_buffer = False
@@ -34,12 +31,8 @@ object_ID_prev_max = 0
 
 # Object instances #############
 image = IMGProcess()
-object_scheduler = Scheduler()
 track_bar = TrackBar()
 centroid_tracker = CentroidTracker(maxCapacity=MAX_CAPACITY)
-calculate_x_average = CalculateAverage()
-calculate_y_average = CalculateAverage()
-calculate_t_average = CalculateAverage()
 
 # Set object parameters #########
 image.webcam = True
@@ -47,9 +40,6 @@ image.path = 'Example_Code/Shape_Detection/shapes.png'
 image.percentage = 60
 
 while True:
-    if object_scheduler.scheduler is not None:  # time scheduler for velocity calculations
-        object_scheduler.scheduler.run(True)
-
     # Initializing img
     img = image.capture_image()
     img_results = img.copy()
@@ -57,7 +47,7 @@ while True:
     bounding_box_array = image.get_contour_img(img_results, LINE_COORD[0][0])
     image.get_hsv_img(img, track_bar.HSVMinMaxArray)
 
-    # Draw line Threshold
+    # Draw line Threshold (arbitrary ATM)
     cv2.line(img_results, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
     # Get dictionary of detected objects' ID and centroid
@@ -65,7 +55,7 @@ while True:
 
     # Create initial Ring Buffer indexes based on detected objects
     if not created_2d_ring_buffer:
-        for objects_detected in range(0, len(bounding_box_array)):
+        for initial_objects_detected in range(0, len(objects)):
             objects_2D_ring_buffer_x.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
             objects_2D_ring_buffer_y.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=int))
             objects_2D_ring_buffer_t.append(RingBuffer(capacity=SAMPLE_SIZE, dtype=float))
@@ -103,19 +93,18 @@ while True:
                         objects_2D_ring_buffer_x[object_index].pop()
                         objects_2D_ring_buffer_y[object_index].pop()
                         objects_2D_ring_buffer_t[object_index].pop()
-                        print("hi")
 
-                        if child_ring_buffer_index < SAMPLE_SIZE-1:
+                        if child_ring_buffer_index < SAMPLE_SIZE-1:     # _velocity_array has a capacity of SAMPLE_SIZE-1
                             x_velocity_array[object_index].pop()
                             y_velocity_array[object_index].pop()
 
-                        if child_ring_buffer_index == 0:
+                        if child_ring_buffer_index == 0:    # _average_velocity has capacity of 1
                             x_average_velocity_array[object_index].pop()
                             y_average_velocity_array[object_index].pop()
 
                 except IndexError:
                     print("index " + str(object_index) + " already cleared")
-            centroid_tracker.cleared_disappeared_objects_ring_buffer = True
+        centroid_tracker.cleared_disappeared_objects_ring_buffer = True
 
     for (object_ID, centroid) in objects.items():
         # draw both the ID of the object and the centroid
@@ -139,7 +128,7 @@ while True:
     print("time sample array" + str(objects_2D_ring_buffer_t))
     print(" ")
 
-    # Calculate Vectors
+    # Calculate Vectors using the most recent 2 data points
     for vector_object_index in range(0, len(objects_2D_ring_buffer_x)):
         x_vector = CalculateVelocity(
             objects_2D_ring_buffer_x[vector_object_index][len(objects_2D_ring_buffer_x[vector_object_index]) - 2],
@@ -152,7 +141,7 @@ while True:
             objects_2D_ring_buffer_t[vector_object_index][len(objects_2D_ring_buffer_x[vector_object_index]) - 2],
             objects_2D_ring_buffer_t[vector_object_index][len(objects_2D_ring_buffer_x[vector_object_index]) - 1])
 
-        if len(objects_2D_ring_buffer_x[vector_object_index]) > 1:
+        if len(objects_2D_ring_buffer_x[vector_object_index]) > 1:  # wait for at least 2 data points
             x_velocity_array[vector_object_index].append('%.3f' % x_vector.get_velocity_vector())   # truncate to 3 decimal points
             y_velocity_array[vector_object_index].append('%.3f' % y_vector.get_velocity_vector())
 
@@ -160,7 +149,7 @@ while True:
     print("y velocity array" + str(y_velocity_array) + " pixels/seconds")
     print(" ")
 
-    # Calculate Vector Average
+    # Calculate Vector Average using numpy average
     for velocity_average_object_index in range(0, len(objects_2D_ring_buffer_x)):
         x_average_velocity_array[velocity_average_object_index].append('%.3f' % np.average(x_velocity_array[velocity_average_object_index]))
         y_average_velocity_array[velocity_average_object_index].append('%.3f' % np.average(y_velocity_array[velocity_average_object_index]))

@@ -78,7 +78,7 @@ class IMGProcess:
     def __init__(self, webcam=True, path=None, percentage=100):
         self.webcam = webcam
         self.path = path
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
         self.percentage = percentage
 
         self.cap.set(10, 160)  # brightness
