@@ -29,7 +29,6 @@ class CentroidTracker:
 
         if self.nextObjectID in self.disappeared_objects:
             self.disappeared_objects.pop(self.disappeared_objects.index(self.nextObjectID))
-            print("hi")
 
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1

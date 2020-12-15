@@ -14,3 +14,4 @@ class CalculateAverage:
     def convolution_avg_function(self, x, length):
         self.average_velocity = np.convolve(x, np.ones(length) / float(length), 'valid')
 
+

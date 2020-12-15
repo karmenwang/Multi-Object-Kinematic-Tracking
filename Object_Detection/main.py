@@ -15,7 +15,7 @@ from Classes.CalculateAverage import CalculateAverage
 
 # Constants/Initialization ######
 MAX_CAPACITY = 10
-SAMPLE_SIZE = 5
+SAMPLE_SIZE = 10
 LINE_COORD = [[600, 0], [600, 700]]  # [[x1,y1], [x2, y2]]
 TIME_INTERVAL = 0.000001
 
@@ -28,8 +28,6 @@ y_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
 
 x_average_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
 y_average_velocity_array = RingBuffer(capacity=MAX_CAPACITY, dtype=RingBuffer)
-
-x_sum = 0
 
 created_2d_ring_buffer = False
 object_ID_prev_max = 0
@@ -63,10 +61,7 @@ while True:
     cv2.line(img_results, (LINE_COORD[0][0], LINE_COORD[0][1]), (LINE_COORD[1][0], LINE_COORD[1][1]), (0, 0, 255), 2)
 
     # Get dictionary of detected objects' ID and centroid
-    try:
-        objects = centroid_tracker.update(bounding_box_array)
-    except RuntimeError:
-        print("OrderedDict mutated during iteration")
+    objects = centroid_tracker.update(bounding_box_array)
 
     # Create initial Ring Buffer indexes based on detected objects
     if not created_2d_ring_buffer:
@@ -77,6 +72,9 @@ while True:
 
             x_velocity_array.append(RingBuffer(capacity=SAMPLE_SIZE - 1, dtype=float))
             y_velocity_array.append(RingBuffer(capacity=SAMPLE_SIZE - 1, dtype=float))
+
+            x_average_velocity_array.append(RingBuffer(capacity=1, dtype=float))
+            y_average_velocity_array.append(RingBuffer(capacity=1, dtype=float))
 
             created_2d_ring_buffer = True
 
@@ -91,26 +89,33 @@ while True:
                 x_velocity_array.append(RingBuffer(capacity=SAMPLE_SIZE - 1, dtype=float))
                 y_velocity_array.append(RingBuffer(capacity=SAMPLE_SIZE - 1, dtype=float))
 
+                x_average_velocity_array.append(RingBuffer(capacity=1, dtype=float))
+                y_average_velocity_array.append(RingBuffer(capacity=1, dtype=float))
+
             object_ID_prev_max = detected_object_ID
 
     # Clear ring buffers for objects that have disappeared
     if not centroid_tracker.cleared_disappeared_objects_ring_buffer:
         for object_index in range(0, len(objects_2D_ring_buffer_x)):
-            try:
-                for child_ring_buffer_index in range(0,
-                                                     SAMPLE_SIZE):  # Iterate through child ring buffer to clear values
-                    if object_index in centroid_tracker.disappeared_objects:
+            if object_index in centroid_tracker.disappeared_objects:
+                try:
+                    for child_ring_buffer_index in range(0, SAMPLE_SIZE):  # Iterate through child ring buffer to clear values
                         objects_2D_ring_buffer_x[object_index].pop()
                         objects_2D_ring_buffer_y[object_index].pop()
                         objects_2D_ring_buffer_t[object_index].pop()
+                        print("hi")
 
-                        if child_ring_buffer_index < SAMPLE_SIZE:
+                        if child_ring_buffer_index < SAMPLE_SIZE-1:
                             x_velocity_array[object_index].pop()
                             y_velocity_array[object_index].pop()
 
-            except IndexError:
-                print("index " + str(object_index) + " already cleared")
-        centroid_tracker.cleared_disappeared_objects_ring_buffer = True
+                        if child_ring_buffer_index == 0:
+                            x_average_velocity_array[object_index].pop()
+                            y_average_velocity_array[object_index].pop()
+
+                except IndexError:
+                    print("index " + str(object_index) + " already cleared")
+            centroid_tracker.cleared_disappeared_objects_ring_buffer = True
 
     for (object_ID, centroid) in objects.items():
         # draw both the ID of the object and the centroid
@@ -127,7 +132,8 @@ while True:
     if objects_2D_ring_buffer_x.right_index == objects_2D_ring_buffer_x.maxlen:
         centroid_tracker.nextObjectID = centroid_tracker.nextObjectID % MAX_CAPACITY
 
-    # print("detected objects" + str(objects))
+    print("detected objects" + str(objects) + " " + "disappeared objects" + str(centroid_tracker.disappeared_objects))
+    print(" ")
     print("x sample array" + str(objects_2D_ring_buffer_x))
     print(" ")
     print("time sample array" + str(objects_2D_ring_buffer_t))
@@ -147,33 +153,21 @@ while True:
             objects_2D_ring_buffer_t[vector_object_index][len(objects_2D_ring_buffer_x[vector_object_index]) - 1])
 
         if len(objects_2D_ring_buffer_x[vector_object_index]) > 1:
-            x_velocity_array[vector_object_index].append(x_vector.get_velocity_vector())
-            y_velocity_array[vector_object_index].append(y_vector.get_velocity_vector())
+            x_velocity_array[vector_object_index].append('%.3f' % x_vector.get_velocity_vector())   # truncate to 3 decimal points
+            y_velocity_array[vector_object_index].append('%.3f' % y_vector.get_velocity_vector())
 
-    print("x velocity array" + str(x_velocity_array))
-    print("y velocity array" + str(y_velocity_array))
+    print("x velocity array" + str(x_velocity_array) + " pixels/seconds")
+    print("y velocity array" + str(y_velocity_array) + " pixels/seconds")
     print(" ")
 
-    # if len(x_velocity_array) == (SAMPLE_SIZE-1):
-    #     # Calculate Vector Average
-    #     for avg_vector_object_index in range(0, len(x_velocity_array)):
-    #         x_sum = sum(x_velocity_array[avg_vector_object_index])
-    #         length= len(x_velocity_array[avg_vector_object_index])
-    #         x_average_velocity_array[avg_vector_object_index].append(x_sum//length)
-    #
-    #     print("x average velocity array" + str(x_average_velocity_array))
-    #     print(" ")
+    # Calculate Vector Average
+    for velocity_average_object_index in range(0, len(objects_2D_ring_buffer_x)):
+        x_average_velocity_array[velocity_average_object_index].append('%.3f' % np.average(x_velocity_array[velocity_average_object_index]))
+        y_average_velocity_array[velocity_average_object_index].append('%.3f' % np.average(y_velocity_array[velocity_average_object_index]))
 
-    # for (objectID, centroid) in objects.items():
-    #     try:
-    #         objectOnScreen = OnScreenObject.OnScreenObject(SAMPLE_SIZE, objectID)
-    #
-    #     except TypeError:
-    #         print("No objects detected")
-    #
-    #     else:
-    #         objectOnScreen.determineVectors(centroid=centroid)
-    #         objectSchedule.scheduler.enter(TIME_INTERVAL, 0, objectOnScreen.AverageCalculator)
+    print("x average velocity array" + str(x_average_velocity_array))
+    print("y average velocity array" + str(y_average_velocity_array))
+    print(" ")
 
     imgStack = stack_images(0.8, ([img, img_results, image.color_mask]))
     # cv2.imshow("Result", imgStack)

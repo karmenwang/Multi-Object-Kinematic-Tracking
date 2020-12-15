@@ -1,8 +1,10 @@
 from numpy_ringbuffer import RingBuffer
+import numpy as np
 count = 0
 count1 = 2
 length = 2
 ring_buffer_2d = []
+average = [None]*length
 created = False
 
 while count < 20:
@@ -18,10 +20,18 @@ while count < 20:
         else:
             ring_buffer_2d[i].append(count)
     count += 1
-print(ring_buffer_2d)
-for i in range(0, 5):
-    ring_buffer_2d[0].popleft()
-print(ring_buffer_2d[0][len(ring_buffer_2d[0])-1])
+    print(ring_buffer_2d)
+
+    for i in range(0, length):
+        # print(np.average(ring_buffer_2d[i]))
+        average[i] = np.average(ring_buffer_2d[i])
+    print(average)
+
+
+
+# for i in range(0, 5):
+    # ring_buffer_2d[0].popleft()
+# print(ring_buffer_2d[0][len(ring_buffer_2d[0])-1])
 
 
 
