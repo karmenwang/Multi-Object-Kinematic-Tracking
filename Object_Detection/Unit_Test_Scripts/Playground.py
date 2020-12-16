@@ -1,5 +1,5 @@
 import cv2
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while True:
     success, img = cap.read()
@@ -7,3 +7,4 @@ while True:
 
     if cv2.waitKey(1) & 0xff == ord('q'):  # press q to exit
         break
+
