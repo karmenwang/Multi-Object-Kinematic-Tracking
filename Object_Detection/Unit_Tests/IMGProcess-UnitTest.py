@@ -9,7 +9,7 @@ image = IMGProcess.IMGProcess()
 # objectDetected = CentroidTracker.CentroidTracker()
 
 image.webcam = True
-image.path = '../Example_Code/shapes.png'
+image.path = '../Example_Code/Shape_Detection/shapes.png'
 image.percentage = 60
 
 while True:

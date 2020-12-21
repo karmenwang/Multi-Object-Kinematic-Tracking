@@ -78,7 +78,7 @@ class IMGProcess:
     def __init__(self, webcam=True, path=None, percentage=100):
         self.webcam = webcam
         self.path = path
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
         self.percentage = percentage
 
         self.cap.set(10, 160)  # brightness
@@ -86,10 +86,8 @@ class IMGProcess:
         self.cap.set(4, 1080)  # height
         # self.cap.set(5, 60)  # set frame rate
 
-        self.imgDilation = 0
-        self.colorMask = 0
-        self.imgCanny = 0
-        self.img_thresh = 0
+        self.color_mask = 0
+        self._img_canny = 0
 
     def capture_image(self):
         if self.webcam:
@@ -107,12 +105,12 @@ class IMGProcess:
 
         threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")  # Lower threshold bound
         threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")  # Upper threshold bound
-        self.imgCanny = cv2.Canny(img_blur_gray, threshold1, threshold2)
+        self._img_canny = cv2.Canny(img_blur_gray, threshold1, threshold2)
         # consider adding a kernel & dilation or morph to rid noise (will need to tune to see if necessary)
 
     def get_contour_img(self, img_contour, line_coord):
-        contours, hierarchy = cv2.findContours(self.imgCanny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        object_edge_array = []
+        contours, hierarchy = cv2.findContours(self.img_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        rect_array = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > 500:
@@ -120,22 +118,44 @@ class IMGProcess:
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 x, y, w, h = cv2.boundingRect(approx)
+                rect = (x, y, x + w, y + h)  # rectangle coordinates
                 object_edge = (x + w, y + (h // 2))  # (right most point, center)
-                cv2.rectangle(img_contour, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                # cv2.putText(img_contour, "w={},h={}".format(w, h), (x - 175, y + h // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                #             (36, 255, 12), 2)
+                cv2.rectangle(img_contour, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 2)
 
                 if object_edge[0] >= line_coord:  # if object has crossed threshold along x
                     cv2.circle(img_contour, object_edge, 5, (0, 255, 0), cv2.FILLED)  # Edge point dot will turn green
                 else:
                     cv2.circle(img_contour, object_edge, 5, (0, 0, 255), cv2.FILLED)  # Edge point dot will turn red
-                object_edge_array.append(object_edge)
-        return object_edge_array
+
+                rect_array.append(rect)
+        return rect_array
 
     def get_hsv_img(self, img, HSVArray):
-        imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert BGR to HSV
         lower = np.array(HSVArray[0])  # lower bound
         upper = np.array(HSVArray[1])  # upper bound
-        mask = cv2.inRange(imgHSV, lower, upper)
-        self.colorMask = cv2.bitwise_and(img, img, mask=mask)
+        mask = cv2.inRange(img_hsv, lower, upper)
+        self.color_mask = cv2.bitwise_and(img, img, mask=mask)
         # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+    @property
+    def img_canny(self):
+        return self._img_canny
+
+    # similar to get_contour_img but used for CentroidTracker-UnitTest
+    def get_bbox(self, img_contour):
+        contours, hierarchy = cv2.findContours(self.img_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        rect_array = []
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > 500:
+                cv2.drawContours(img_contour, cnt, -1, (255, 0, 0), 3)
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+                x, y, w, h = cv2.boundingRect(approx)
+                rect = (x, y, x + w, y + h)  # rectangle coordinates
+                cv2.rectangle(img_contour, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 2)
+
+                rect_array.append(rect)
+                print(rect_array)
+        return rect_array
